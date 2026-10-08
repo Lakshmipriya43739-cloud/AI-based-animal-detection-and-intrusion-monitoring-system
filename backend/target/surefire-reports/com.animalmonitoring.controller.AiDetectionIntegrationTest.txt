@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.animalmonitoring.controller.AiDetectionIntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 61.24 s -- in com.animalmonitoring.controller.AiDetectionIntegrationTest

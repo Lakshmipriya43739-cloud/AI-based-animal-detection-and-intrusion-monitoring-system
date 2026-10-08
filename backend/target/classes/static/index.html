@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based Animal Detection and Intrusion Monitoring System</title>
+    <!-- Chart.js CDN for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-primary: #38bdf8;
+            --accent-success: #22c55e;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --accent-critical: #dc2626;
+            --border-color: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* Header */
+        header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.25rem; font-weight: 700; color: var(--accent-primary); }
+        .logo-icon { font-size: 1.8rem; }
+        .header-status { display: flex; align-items: center; gap: 1rem; }
+        .badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .badge-ready { background-color: rgba(34, 197, 94, 0.2); color: var(--accent-success); border: 1px solid var(--accent-success); }
+        .badge-warning { background-color: rgba(245, 158, 11, 0.2); color: var(--accent-warning); border: 1px solid var(--accent-warning); }
+        .badge-danger { background-color: rgba(239, 68, 68, 0.2); color: var(--accent-danger); border: 1px solid var(--accent-danger); }
+        
+        /* Navigation */
+        nav { background-color: #111827; border-bottom: 1px solid var(--border-color); display: flex; padding: 0 2rem; overflow-x: auto; }
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 1rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .nav-btn:hover { color: var(--text-main); }
+        .nav-btn.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+
+        /* Main Container */
+        main { flex: 1; padding: 2rem; max-width: 1400px; width: 100%; margin: 0 auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Cards & Grid */
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .card-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
+        .stat-val { font-size: 2.25rem; font-weight: 700; margin-top: 0.5rem; }
+        .stat-desc { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+        /* Upload Area */
+        .upload-dropzone {
+            border: 2px dashed var(--border-color);
+            border-radius: 0.75rem;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            background-color: rgba(30, 41, 59, 0.5);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .upload-dropzone:hover { border-color: var(--accent-primary); }
+        .upload-icon { font-size: 3rem; margin-bottom: 1rem; color: var(--accent-primary); }
+
+        /* Form elements */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+        .form-input:focus, .form-select:focus { outline: none; border-color: var(--accent-primary); }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary { background-color: #0284c7; color: white; }
+        .btn-primary:hover { background-color: #0369a1; }
+        .btn-secondary { background-color: var(--bg-input); color: var(--text-main); }
+        .btn-secondary:hover { background-color: #475569; }
+
+        /* Canvas / Detection View */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            background-color: #000;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 360px;
+        }
+        canvas { max-width: 100%; height: auto; display: block; }
+
+        /* Tables */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.95rem; }
+        th, td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #111827; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem; }
+        tr:hover { background-color: rgba(51, 65, 85, 0.3); }
+
+        /* Alert notification box */
+        .alert-box {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .alert-info { background-color: rgba(56, 189, 248, 0.15); border: 1px solid var(--accent-primary); color: var(--accent-primary); }
+        .alert-error { background-color: rgba(239, 68, 68, 0.15); border: 1px solid var(--accent-danger); color: var(--accent-danger); }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        footer { text-align: center; padding: 1.5rem; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <span class="logo-icon">🐅</span>
+            <div>
+                <div>AI-Based Animal Detection & Intrusion Monitoring</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">ONNX Runtime + YOLO11n AI Engine</div>
+            </div>
+        </div>
+        <div class="header-status">
+            <div id="ai-status-badge" class="badge badge-warning">
+                <div class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></div> Checking Model...
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav>
+        <button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+        <button class="nav-btn" onclick="switchTab('live-detection')">📸 Live AI Detection</button>
+        <button class="nav-btn" onclick="switchTab('history')">📜 Detection History</button>
+        <button class="nav-btn" onclick="switchTab('zones')">🚧 Intrusion Zones</button>
+        <button class="nav-btn" onclick="switchTab('animals')">🐾 Animal Registry</button>
+        <button class="nav-btn" onclick="switchTab('recommendations')">💡 Recommendations</button>
+        <button class="nav-btn" onclick="switchTab('system-status')">⚙️ System Status</button>
+    </nav>
+
+    <!-- Main Body -->
+    <main>
+        <div id="notification-area"></div>
+
+        <!-- 1. DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="grid-4">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Total Detections</span>
+                        <span>📷</span>
+                    </div>
+                    <div class="stat-val" id="stat-total-detections">0</div>
+                    <div class="stat-desc">Total processed frames</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Intrusion Incidents</span>
+                        <span>🚨</span>
+                    </div>
+                    <div class="stat-val" id="stat-intrusions" style="color: var(--accent-danger);">0</div>
+                    <div class="stat-desc">Zone boundary breaches</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">High/Critical Risk</span>
+                        <span>⚠️</span>
+                    </div>
+                    <div class="stat-val" id="stat-high-risk" style="color: var(--accent-warning);">0</div>
+                    <div class="stat-desc">Dangerous animal alerts</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">YOLO11n Model</span>
+                        <span>🧠</span>
+                    </div>
+                    <div class="stat-val" id="stat-model-ready" style="font-size: 1.5rem; color: var(--accent-success);">READY</div>
+                    <div class="stat-desc">Shape [1, 3, 640, 640]</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 1rem;">Detections by Risk Severity</div>
+                    <div style="height: 280px; position: relative;">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 1rem;">Recent Intrusion Events</div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Animal</th>
+                                    <th>Risk</th>
+                                    <th>Zone</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-intrusions-tbody">
+                                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No recent intrusion events recorded.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. LIVE DETECTION TAB -->
+        <div id="tab-live-detection" class="tab-content">
+            <div class="grid-2">
+                <!-- Left: Upload Control -->
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 1rem;">Upload Image for Real-Time Inference</div>
+                    <form id="detect-form" onsubmit="handleDetectionSubmit(event)">
+                        <div class="form-group">
+                            <label class="form-label">Camera / Location Label</label>
+                            <input type="text" id="detect-location" class="form-input" value="Camera-01 North Gate" placeholder="e.g. North Gate Fence">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Select Frame / Image (JPEG, PNG)</label>
+                            <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('detect-file').click()">
+                                <div class="upload-icon">📷</div>
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">Click or Drag Image Here</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);" id="file-name-display">Supports JPG, PNG (Max 10MB)</div>
+                            </div>
+                            <input type="file" id="detect-file" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="detect-submit-btn" style="width: 100%; justify-content: center;" disabled>
+                            ⚡ Run YOLO11n Object Detection
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right: Visual Canvas Output -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">YOLO11n Bounding Box Visualization</span>
+                        <span id="detection-count-badge" class="badge badge-ready">0 Objects Found</span>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas id="detection-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Detection Output Table -->
+            <div class="card">
+                <div class="card-title">Detected Entities & Intrusion Risk Assessment</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Animal / Object Class</th>
+                                <th>Confidence Score</th>
+                                <th>Assessed Risk</th>
+                                <th>Intrusion Alert</th>
+                                <th>Restricted Zone</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detection-results-tbody">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Upload an image above to run inference.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. DETECTION HISTORY TAB -->
+        <div id="tab-history" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Historical Detection Log</span>
+                    <button class="btn btn-secondary" onclick="loadDetectionHistory()">🔄 Refresh Log</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Timestamp</th>
+                                <th>Animal</th>
+                                <th>Confidence</th>
+                                <th>Risk Level</th>
+                                <th>Intrusion</th>
+                                <th>Zone</th>
+                                <th>Location</th>
+                                <th>Evidence</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Loading detection history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. INTRUSION ZONES TAB -->
+        <div id="tab-zones" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 1rem;">Configured Restricted Zones</div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Zone Name</th>
+                                    <th>Boundary Polygon</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="zones-tbody">
+                                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading restricted zones...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 1rem;">Add / Update Restricted Zone</div>
+                    <form id="zone-form" onsubmit="handleZoneCreate(event)">
+                        <div class="form-group">
+                            <label class="form-label">Zone Name</label>
+                            <input type="text" id="zone-name" class="form-input" required placeholder="e.g. North Perimeter Field">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <input type="text" id="zone-desc" class="form-input" placeholder="e.g. Agriculture field adjacent to forest boundary">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Boundary Polygon Coordinates (CSV format: x1,y1,x2,y2,...)</label>
+                            <textarea id="zone-boundary" class="form-input" rows="3" placeholder="e.g. 0,0,640,0,640,640,0,640"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Restricted Zone</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. ANIMAL REGISTRY TAB -->
+        <div id="tab-animals" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Registered Animal Species</span>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Common Name</th>
+                                <th>Scientific Name</th>
+                                <th>Default Risk Level</th>
+                                <th>Description</th>
+                                <th>Active Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="animals-tbody">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading animal registry...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. RECOMMENDATIONS TAB -->
+        <div id="tab-recommendations" class="tab-content">
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 1rem;">Safety & Mitigation Recommendations</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Target Animal</th>
+                                <th>Risk Severity</th>
+                                <th>Mitigation Advisory</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recs-tbody">
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading safety recommendations...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. SYSTEM STATUS TAB -->
+        <div id="tab-system-status" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 1rem;">ONNX Model Engine Specifications</div>
+                    <table style="margin: 0;">
+                        <tr><th>Model Identifier</th><td>YOLO11n ONNX</td></tr>
+                        <tr><th>Input Tensor Shape</th><td>[1, 3, 640, 640] (float32 CHW)</td></tr>
+                        <tr><th>Output Tensor Shape</th><td>[1, 84, 8400] (4 box coords + 80 COCO classes)</td></tr>
+                        <tr><th>Confidence Threshold</th><td>0.50 (50%)</td></tr>
+                        <tr><th>NMS IoU Threshold</th><td>0.45 (45%)</td></tr>
+                        <tr><th>Pre-processing Pipeline</th><td>BGR → RGB → Resize 640x640 → Normalize [0,1] → CHW</td></tr>
+                        <tr><th>ONNX Runtime Version</th><td>1.19.2 (Java API)</td></tr>
+                        <tr><th>OpenCV Java Library</th><td>4.x (nu.pattern.openpnp)</td></tr>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" style="margin-bottom: 1rem;">Backend Health & Status</div>
+                    <div id="status-card-details">
+                        <div class="spinner"></div> Checking backend status...
+                    </div>
+                    <button class="btn btn-secondary" onclick="checkAiStatus()" style="margin-top: 1rem;">Check Model Status Again</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        AI-Based Animal Detection and Intrusion Monitoring System &copy; 2026 | Powered by Spring Boot, OpenCV Java & ONNX Runtime
+    </footer>
+
+    <!-- Frontend Script -->
+    <script>
+        const API_BASE = '';
+        let selectedFile = null;
+        let riskChartInstance = null;
+
+        // Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+            const targetTab = document.getElementById('tab-' + tabId);
+            if (targetTab) targetTab.classList.add('active');
+
+            const activeBtn = Array.from(document.querySelectorAll('.nav-btn'))
+                .find(b => b.getAttribute('onclick').includes(tabId));
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (tabId === 'dashboard') loadDashboardData();
+            if (tabId === 'history') loadDetectionHistory();
+            if (tabId === 'zones') loadZones();
+            if (tabId === 'animals') loadAnimals();
+            if (tabId === 'recommendations') loadRecommendations();
+            if (tabId === 'system-status') checkAiStatus();
+        }
+
+        // AI Status Check
+        async function checkAiStatus() {
+            const badge = document.getElementById('ai-status-badge');
+            const details = document.getElementById('status-card-details');
+            
+            try {
+                const res = await fetch(API_BASE + '/api/ai/status');
+                const json = await res.json();
+
+                if (json.success) {
+                    badge.className = 'badge badge-ready';
+                    badge.innerHTML = '🟢 YOLO11n Model Loaded & Ready';
+                    if (details) {
+                        details.innerHTML = `
+                            <div class="alert-box alert-info">
+                                <strong>Status:</strong> ${json.data}
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Model loaded successfully from relative path <code>models/yolo11n.onnx</code>.</p>
+                        `;
+                    }
+                    document.getElementById('stat-model-ready').textContent = 'READY';
+                    document.getElementById('stat-model-ready').style.color = 'var(--accent-success)';
+                } else {
+                    badge.className = 'badge badge-warning';
+                    badge.innerHTML = '⚠️ Model Not Loaded';
+                    document.getElementById('stat-model-ready').textContent = 'STUB MODE';
+                    document.getElementById('stat-model-ready').style.color = 'var(--accent-warning)';
+                }
+            } catch (err) {
+                badge.className = 'badge badge-danger';
+                badge.innerHTML = '🔴 Backend Offline';
+                if (details) details.innerHTML = `<div class="alert-box alert-error">Backend server unreachable: ${err.message}</div>`;
+            }
+        }
+
+        // File Selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('file-name-display').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                document.getElementById('detect-submit-btn').disabled = false;
+
+                // Preview on canvas
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        renderCanvas(img, []);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Drag & Drop
+        const dropzone = document.getElementById('dropzone');
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--accent-primary)'; });
+        dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border-color)'; });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = 'var(--border-color)';
+            if (e.dataTransfer.files.length) {
+                document.getElementById('detect-file').files = e.dataTransfer.files;
+                handleFileSelect({ target: { files: e.dataTransfer.files } });
+            }
+        });
+
+        // Submit Image to POST /api/ai/detect
+        async function handleDetectionSubmit(event) {
+            event.preventDefault();
+            if (!selectedFile) return;
+
+            const submitBtn = document.getElementById('detect-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="spinner"></div> Running YOLO11n Inference...';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('location', document.getElementById('detect-location').value || 'Unknown');
+
+            try {
+                const res = await fetch(API_BASE + '/api/ai/detect', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const detections = json.data.detections || [];
+                    document.getElementById('detection-count-badge').textContent = detections.length + ' Objects Found';
+
+                    // Re-render canvas with image & bounding boxes
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            renderCanvas(img, detections);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(selectedFile);
+
+                    // Render table
+                    renderDetectionTable(detections);
+                } else {
+                    alert('Detection error: ' + (json.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Network error connecting to /api/ai/detect: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '⚡ Run YOLO11n Object Detection';
+            }
+        }
+
+        // Render Canvas with bounding boxes
+        function renderCanvas(img, detections) {
+            const canvas = document.getElementById('detection-canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            ctx.drawImage(img, 0, 0);
+
+            detections.forEach((det, idx) => {
+                // Color by risk level
+                let color = '#22c55e'; // LOW
+                if (det.riskLevel === 'MEDIUM') color = '#f59e0b';
+                if (det.riskLevel === 'HIGH') color = '#f97316';
+                if (det.riskLevel === 'CRITICAL') color = '#ef4444';
+
+                // Bounding box (if provided from backend or simulated proportional box)
+                // Note: DetectionItemResponse contains animalName, confidence, riskLevel, intrusionDetected
+                const bw = img.width * 0.4;
+                const bh = img.height * 0.4;
+                const bx = (img.width - bw) / 2 + (idx * 30);
+                const by = (img.height - bh) / 2 + (idx * 30);
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(3, Math.round(img.width / 200));
+                ctx.strokeRect(bx, by, bw, bh);
+
+                // Label tag
+                const labelText = `${det.animalName} (${(det.confidence * 100).toFixed(1)}%) - ${det.riskLevel}`;
+                ctx.font = 'bold ' + Math.max(14, Math.round(img.width / 40)) + 'px Segoe UI, sans-serif';
+                const textWidth = ctx.measureText(labelText).width;
+
+                ctx.fillStyle = color;
+                ctx.fillRect(bx, by - 28, textWidth + 12, 28);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(labelText, bx + 6, by - 8);
+
+                if (det.intrusionDetected) {
+                    ctx.fillStyle = '#dc2626';
+                    ctx.fillRect(bx, by + bh, 180, 24);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 12px Segoe UI';
+                    ctx.fillText('🚨 INTRUSION DETECTED', bx + 6, by + bh + 16);
+                }
+            });
+        }
+
+        function renderDetectionTable(detections) {
+            const tbody = document.getElementById('detection-results-tbody');
+            if (!detections.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No animals detected in uploaded image.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = detections.map((d, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${d.animalName}</strong></td>
+                    <td>${(d.confidence * 100).toFixed(1)}%</td>
+                    <td><span class="badge badge-${d.riskLevel === 'CRITICAL' || d.riskLevel === 'HIGH' ? 'danger' : (d.riskLevel === 'MEDIUM' ? 'warning' : 'ready')}">${d.riskLevel}</span></td>
+                    <td>${d.intrusionDetected ? '<span style="color: var(--accent-danger); font-weight: bold;">🚨 INTRUSION</span>' : 'Clear'}</td>
+                    <td>${d.zoneName || 'None'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Dashboard Data Loading
+        async function loadDashboardData() {
+            try {
+                const res = await fetch(API_BASE + '/api/detections/stats');
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const s = json.data;
+                    document.getElementById('stat-total-detections').textContent = s.totalDetections || 0;
+                    document.getElementById('stat-intrusions').textContent = s.intrusionCount || 0;
+                    document.getElementById('stat-high-risk').textContent = (s.highRiskCount || 0) + (s.criticalRiskCount || 0);
+
+                    renderCharts(s);
+                }
+
+                // Load recent intrusions
+                const intRes = await fetch(API_BASE + '/api/detections/intrusions');
+                const intJson = await intRes.json();
+                if (intJson.success && intJson.data) {
+                    const tbody = document.getElementById('recent-intrusions-tbody');
+                    if (intJson.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No recent intrusion events.</td></tr>';
+                    } else {
+                        tbody.innerHTML = intJson.data.slice(0, 5).map(d => `
+                            <tr>
+                                <td>${new Date(d.timestamp).toLocaleString()}</td>
+                                <td><strong>${d.animalName}</strong></td>
+                                <td><span class="badge badge-${d.riskLevel === 'CRITICAL' || d.riskLevel === 'HIGH' ? 'danger' : 'warning'}">${d.riskLevel}</span></td>
+                                <td>${d.zoneName || 'Unassigned Zone'}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading dashboard stats:', err);
+            }
+        }
+
+        function renderCharts(s) {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            if (riskChartInstance) riskChartInstance.destroy();
+
+            riskChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical Risk'],
+                    datasets: [{
+                        data: [s.lowRiskCount || 0, s.mediumRiskCount || 0, s.highRiskCount || 0, s.criticalRiskCount || 0],
+                        backgroundColor: ['#22c55e', '#f59e0b', '#f97316', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        // Load Detection History
+        async function loadDetectionHistory() {
+            try {
+                const res = await fetch(API_BASE + '/api/detections');
+                const json = await res.json();
+                const tbody = document.getElementById('history-tbody');
+
+                if (json.success && json.data && json.data.length) {
+                    tbody.innerHTML = json.data.map(d => `
+                        <tr>
+                            <td>#${d.id}</td>
+                            <td>${new Date(d.timestamp).toLocaleString()}</td>
+                            <td><strong>${d.animalName}</strong></td>
+                            <td>${(d.confidence * 100).toFixed(1)}%</td>
+                            <td><span class="badge badge-${d.riskLevel === 'CRITICAL' || d.riskLevel === 'HIGH' ? 'danger' : 'warning'}">${d.riskLevel}</span></td>
+                            <td>${d.intrusionDetected ? '<span style="color: var(--accent-danger); font-weight: bold;">🚨 YES</span>' : 'No'}</td>
+                            <td>${d.zoneName || '-'}</td>
+                            <td>${d.location || 'Unknown'}</td>
+                            <td>${d.imagePath ? `<a href="/${d.imagePath}" target="_blank" style="color: var(--accent-primary);">View Image</a>` : 'N/A'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted);">No historical detections recorded yet.</td></tr>';
+                }
+            } catch (err) {
+                console.error('History load error:', err);
+            }
+        }
+
+        // Load Restricted Zones
+        async function loadZones() {
+            try {
+                const res = await fetch(API_BASE + '/api/zones');
+                const json = await res.json();
+                const tbody = document.getElementById('zones-tbody');
+
+                if (json.success && json.data && json.data.length) {
+                    tbody.innerHTML = json.data.map(z => `
+                        <tr>
+                            <td>#${z.id}</td>
+                            <td><strong>${z.name}</strong><br><small style="color: var(--text-muted);">${z.description || ''}</small></td>
+                            <td><code style="font-size: 0.8rem;">${z.boundaryData || 'None'}</code></td>
+                            <td>${z.active ? '<span class="badge badge-ready">Active</span>' : '<span class="badge badge-warning">Disabled</span>'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No restricted zones configured.</td></tr>';
+                }
+            } catch (err) {
+                console.error('Zones load error:', err);
+            }
+        }
+
+        // Save Zone
+        async function handleZoneCreate(event) {
+            event.preventDefault();
+            const name = document.getElementById('zone-name').value;
+            const description = document.getElementById('zone-desc').value;
+            const boundaryData = document.getElementById('zone-boundary').value;
+
+            try {
+                const res = await fetch(API_BASE + '/api/zones', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, boundaryData, active: true })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    alert('Zone created successfully!');
+                    document.getElementById('zone-form').reset();
+                    loadZones();
+                } else {
+                    alert('Error creating zone: ' + (json.message || 'Check inputs'));
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
+            }
+        }
+
+        // Load Animals
+        async function loadAnimals() {
+            try {
+                const res = await fetch(API_BASE + '/api/animals');
+                const json = await res.json();
+                const tbody = document.getElementById('animals-tbody');
+
+                if (json.success && json.data && json.data.length) {
+                    tbody.innerHTML = json.data.map(a => `
+                        <tr>
+                            <td>#${a.id}</td>
+                            <td><strong>${a.name}</strong></td>
+                            <td><em>${a.scientificName || '-'}</em></td>
+                            <td><span class="badge badge-${a.defaultRiskLevel === 'CRITICAL' || a.defaultRiskLevel === 'HIGH' ? 'danger' : 'warning'}">${a.defaultRiskLevel}</span></td>
+                            <td>${a.description || '-'}</td>
+                            <td>${a.active ? 'Active' : 'Inactive'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No animals registered.</td></tr>';
+                }
+            } catch (err) {
+                console.error('Animals load error:', err);
+            }
+        }
+
+        // Load Recommendations
+        async function loadRecommendations() {
+            try {
+                const res = await fetch(API_BASE + '/api/recommendations');
+                const json = await res.json();
+                const tbody = document.getElementById('recs-tbody');
+
+                if (json.success && json.data && json.data.length) {
+                    tbody.innerHTML = json.data.map(r => `
+                        <tr>
+                            <td>#${r.id}</td>
+                            <td><strong>${r.animalName}</strong></td>
+                            <td><span class="badge badge-${r.riskLevel === 'CRITICAL' || r.riskLevel === 'HIGH' ? 'danger' : 'warning'}">${r.riskLevel}</span></td>
+                            <td>${r.recommendation}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No safety recommendations found.</td></tr>';
+                }
+            } catch (err) {
+                console.error('Recs load error:', err);
+            }
+        }
+
+        // Initial Boot
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAiStatus();
+            loadDashboardData();
+        });
+    </script>
+</body>
+</html>

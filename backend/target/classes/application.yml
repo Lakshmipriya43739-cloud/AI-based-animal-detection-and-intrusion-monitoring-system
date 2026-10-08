@@ -1,0 +1,153 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: animal-monitoring-backend
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:animal_monitoring}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+
+  # Increase max upload size for image/frame uploads
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  sql:
+    init:
+      mode: never
+
+# JWT Configuration
+app:
+  jwt:
+    secret: ${JWT_SECRET:VGhpcyBpcyBhIHZlcnkgbG9uZyBhbmQgc2VjdXJlIHNlY3JldCBrZXkgZm9yIEpXVCB0b2tlbiBnZW5lcmF0aW9uIGluIGFuaW1hbCBtb25pdG9yaW5n}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# AI / Detection Configuration
+ai:
+  model:
+    # Place your YOLO ONNX model at this path relative to the working directory.
+    # Example: backend/models/yolov8n.onnx
+    # If the file is absent, the AI service starts in STUB mode and returns no detections.
+   path: ${AI_MODEL_PATH:models/yolo11n.onnx}
+
+  confidence:
+    # Minimum detection confidence (0.0–1.0). Detections below this are discarded.
+    threshold: ${AI_CONFIDENCE_THRESHOLD:0.5}
+
+  nms:
+    # Non-Maximum Suppression IoU threshold. Overlapping boxes above this are suppressed.
+    threshold: ${AI_NMS_THRESHOLD:0.45}
+
+  input:
+    # YOLO model input resolution. Must match the resolution used during ONNX export.
+    width: ${AI_INPUT_WIDTH:640}
+    height: ${AI_INPUT_HEIGHT:640}
+
+  image:
+    # Directory where detection evidence images are stored.
+    storage-path: ${AI_IMAGE_STORAGE_PATH:uploads/detections}
+
+  # Mapping from YOLO class index (0-based) to animal name.
+  # Adjust class IDs to match your specific trained model.
+  class-names:
+    0: person
+    1: bicycle
+    2: car
+    3: motorcycle
+    4: airplane
+    5: bus
+    6: train
+    7: truck
+    8: boat
+    9: traffic light
+    10: fire hydrant
+    11: stop sign
+    12: parking meter
+    13: bench
+    14: bird
+    15: cat
+    16: dog
+    17: horse
+    18: sheep
+    19: cow
+    20: elephant
+    21: bear
+    22: zebra
+    23: giraffe
+    24: backpack
+    25: umbrella
+    26: handbag
+    27: tie
+    28: suitcase
+    29: frisbee
+    30: skis
+    31: snowboard
+    32: sports ball
+    33: kite
+    34: baseball bat
+    35: baseball glove
+    36: skateboard
+    37: surfboard
+    38: tennis racket
+    39: bottle
+    40: wine glass
+    41: cup
+    42: fork
+    43: knife
+    44: spoon
+    45: bowl
+    46: banana
+    47: apple
+    48: sandwich
+    49: orange
+    50: broccoli
+    51: carrot
+    52: hot dog
+    53: pizza
+    54: donut
+    55: cake
+    56: chair
+    57: couch
+    58: potted plant
+    59: bed
+    60: dining table
+    61: toilet
+    62: tv
+    63: laptop
+    64: mouse
+    65: remote
+    66: keyboard
+    67: cell phone
+    68: microwave
+    69: oven
+    70: toaster
+    71: sink
+    72: refrigerator
+    73: book
+    74: clock
+    75: vase
+    76: scissors
+    77: teddy bear
+    78: hair drier
+    79: toothbrush
+
+logging:
+  level:
+    com.animalmonitoring: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN

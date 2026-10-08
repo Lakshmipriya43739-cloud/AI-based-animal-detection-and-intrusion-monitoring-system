@@ -1,0 +1,5 @@
+com\animalmonitoring\service\ZoneServiceTest.class
+com\animalmonitoring\controller\AiDetectionIntegrationTest.class
+com\animalmonitoring\service\AuthServiceTest.class
+com\animalmonitoring\controller\AuthControllerIntegrationTest.class
+com\animalmonitoring\service\AnimalServiceTest.class
